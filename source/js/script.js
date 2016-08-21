@@ -33,6 +33,18 @@ window.onload = function(){
             context.arc(x, y, radius, RADIANT.DEGREES_0, RADIANT.DEGREES_360)
             context.closePath();
             context.fill();
+        },
+        drawTriangle: function(context, x, y, size, color){
+            var height = Math.sqrt(Math.pow(size, 2) - Math.pow(size/2, 2));
+            var halfSize = size / 2;
+            
+            context.fillStyle = color;
+            context.beginPath();
+            context.moveTo(x, y);
+            context.lineTo(x + halfSize, y + height);
+            context.lineTo(x - halfSize, y + height);
+            context.closePath();
+            context.fill();
         }
     }
 
@@ -98,26 +110,25 @@ window.onload = function(){
             particleemitter.emitedParticles = particleemitter.emitedParticles.filter(p => !p.isDestroyed);
         },
         emit: function(particleemitter){
+            var newParticle;
+
             if(!particleemitter.emitedParticles){
                 particleemitter.emitedParticles = [];
             }
-            if(Array.isArray(particleemitter.emitVector)){
-                var particle = ParticleEmitterRunner.createParticle(particleemitter);
-                for (var idx = 0; idx < particleemitter.emitVector.length; idx++) {
-                    var emitVector = particleemitter.emitVector[idx];
-                    var newParticle = Object.assign({}, particle);
 
-                    console.info(newParticle);
-                    console.info(emitVector);
-                   
-                    newParticle.getColor = particle.getColor;
-                    newParticle.vx = emitVector.x;
-                    newParticle.vy = emitVector.y;
-                   
-                    particleemitter.emitedParticles.push(newParticle);
+            var particle = ParticleEmitterRunner.createParticle(particleemitter);
+            for (var idx = 0; idx < particleemitter.emitVectors.length; idx++) {
+                var emitVector = particleemitter.emitVectors[idx];
+                newParticle = Object.assign({}, particle);
+                
+                newParticle.getColor = particle.getColor;
+                newParticle.vx = emitVector.x;
+                newParticle.vy = emitVector.y;
+                
+                if(particleemitter.shouldRandomizeEmitVector){
+                    this.randomizeEmitterEmitVector(newParticle);
                 }
-            } else {
-                particleemitter.emitedParticles.push(ParticleEmitterRunner.createParticle(particleemitter));
+                particleemitter.emitedParticles.push(newParticle);
             }
             
         },
@@ -144,12 +155,17 @@ window.onload = function(){
                 }      
             }
         },
+        randomizeEmitterEmitVector: function(particle){
+            var rnd = (maxNumber)=> parseInt((Math.random()*100 * maxNumber)%maxNumber);
+            var sign = rnd(2)===0 ? -1 : 1;
+            var slope = rnd(8)+1;
+            particle.vy = -slope;
+            particle.vx = sign;
+        },
         createParticle: function(particleemitter){
             return {
                 x: particleemitter.emitPoint.x, 
                 y: particleemitter.emitPoint.y,
-                vx: particleemitter.emitVector.x,
-                vy: particleemitter.emitVector.y,
                 maxLifeSpan: particleemitter.particleMaxLifeSpan,
                 size: particleemitter.particleSize,
                 speed: particleemitter.emitSpeed,
@@ -181,60 +197,32 @@ window.onload = function(){
         }
     };
 
-    var baseParticleEmitter = {
-        emitedParticles:[],
-        emitPoint: {x:0 , y:0 },
-        emitVector: {x:0, y: 0},
-        emitSpeed: 1,
-        particleMaxLifeSpan: MAX_LIFE_SPAN,
-        particleSize: size,
-        particleColor: {r:0, g:0, b:0, a:1},
-        renderer: function (context, particle){
-            context.fillStyle = particle.getColor();
-            context.fillRect(particle.x, particle.y, this.particleSize, this.particleSize);
-        }
-    };
-
     var particleEngineTest = () =>{
 
         var baseParticleEmitter1 = {
             emitedParticles:[],
-            emitPoint: {x: canvas.width / 2, y: canvas.height -10},
-            emitVector: [{x:vx, y:vy}, {x:-vx, y:vy}, {x:-vx-1, y:vy}, {x:vx-1, y:vy}, {x:vx+1, y:vy}],
+            emitPoint: {x: canvas.width / 2, y: canvas.height -60},
+            emitVectors: [{x:vx, y:vy}, {x:-vx, y:vy}, {x:-vx-1, y:vy}],
             emitSpeed: speed,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
             particleSize: size,
-            particleColor: {r:0, g:0, b:0, a:1}
+            particleColor: {r:0, g:0, b:0, a:1},
+            shouldRandomizeEmitVector: true
         };
 
         var baseParticleEmitter2 = {
             emitedParticles:[],
-            emitPoint: {x: canvas.width - 10, y: canvas.height/2},
-            emitVector: {x:vx, y:vy},
+            emitPoint: {x: canvas.width / 2, y: canvas.height -60},
+            emitVectors: [{x:vx, y:vy}, {x:1, y:1}],
             emitSpeed: speed,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
             particleSize: size,
-            particleColor: {r:255, g:0, b:0, a:1}
-        };
-
-        var baseParticleEmitter3 = {
-            emitedParticles:[],
-            emitPoint: {x: 10, y: canvas.height/2},
-            emitVector: {x:vx, y:vy},
-            emitSpeed: speed,
-            particleMaxLifeSpan: MAX_LIFE_SPAN,
-            particleSize: size,
-            particleColor: {r:0, g:255, b:0, a:1}
-        };
-
-        var baseParticleEmitter4 = {
-            emitedParticles:[],
-            emitPoint: {x: canvas.width / 2, y:  10},
-            emitVector: {x:vx, y:vy},
-            emitSpeed: speed,
-            particleMaxLifeSpan: MAX_LIFE_SPAN,
-            particleSize: size,
-            particleColor: {r:0, g:0, b:255, a:1}
+            particleColor: {r:255, g:0, b:0, a:1},
+            shouldRandomizeEmitVector: true,
+            renderer : (context, particle) =>{
+                context.fillStyle = particle.getColor();
+                context.fillRect(particle.x, particle.y, particle.size, particle.size);
+            }
         };
 
         Engine.init({
@@ -245,27 +233,12 @@ window.onload = function(){
 
         Engine.addObjectToRender(baseParticleEmitter1);
         Engine.addObjectToRender(baseParticleEmitter2);
-       /* Engine.addObjectToRender(baseParticleEmitter3);
-        Engine.addObjectToRender(baseParticleEmitter4);*/
+
         Engine.startRender();
 
-        var rnd = (maxNumber)=> parseInt((Math.random()*100 * maxNumber)%maxNumber);
-        var randomizeEmitterEmitVector = (emitter) =>{
-            var sign = rnd(2)===0 ? -1 : 1;
-            var slope = rnd(8)+1;
-            emitter.emitVector.y = -slope;
-            emitter.emitVector.x = sign;
-        };
         setInterval(()=> {
-            // randomizeEmitterEmitVector(baseParticleEmitter1);
-            randomizeEmitterEmitVector(baseParticleEmitter2);
-             /*randomizeEmitterEmitVector(baseParticleEmitter3);
-            randomizeEmitterEmitVector(baseParticleEmitter4);*/
-                    
             ParticleEmitterRunner.emit(baseParticleEmitter1);
             ParticleEmitterRunner.emit(baseParticleEmitter2);
-            /*ParticleEmitterRunner.emit(baseParticleEmitter3);
-            ParticleEmitterRunner.emit(baseParticleEmitter4);*/
         }, 500);
     };
 
