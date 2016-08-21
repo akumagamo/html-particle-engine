@@ -2,7 +2,7 @@
 
 window.onload = function(){
 
-    const MAX_LIFE_SPAN = 3000;
+    const MAX_LIFE_SPAN = 1000;
     const GRAVITY = 0.1;
     const VERTICAL_DRAG = -0.75;
     const HORIZANTAL_DRAG = 0.75;
@@ -65,7 +65,7 @@ window.onload = function(){
         },
         renderObjectsOnScreen: function(){
             for(var idx=0; idx<this.objectsToRender.length; idx++){
-                var objectToRender = this.objectsToRender[idx];
+                var objectToRender = this.objectsToRender[idx];                
                 ParticleEmitterRunner.render(this.context, {height:this.height}, objectToRender);
             }
             this.increaseFrameRateCount();
@@ -95,15 +95,34 @@ window.onload = function(){
     
     var ParticleEmitterRunner = {
         cleanupDestroyedParticles: function(particleemitter){
-            particleemitter.emitedParticles = particleemitter.emitedParticles.filter(p=>!p.isDestroyed);
+            particleemitter.emitedParticles = particleemitter.emitedParticles.filter(p => !p.isDestroyed);
         },
         emit: function(particleemitter){
             if(!particleemitter.emitedParticles){
                 particleemitter.emitedParticles = [];
             }
-            particleemitter.emitedParticles.push(ParticleEmitterRunner.createParticle(particleemitter));
+            if(Array.isArray(particleemitter.emitVector)){
+                var particle = ParticleEmitterRunner.createParticle(particleemitter);
+                for (var idx = 0; idx < particleemitter.emitVector.length; idx++) {
+                    var emitVector = particleemitter.emitVector[idx];
+                    var newParticle = Object.assign({}, particle);
+
+                    console.info(newParticle);
+                    console.info(emitVector);
+                   
+                    newParticle.getColor = particle.getColor;
+                    newParticle.vx = emitVector.x;
+                    newParticle.vy = emitVector.y;
+                   
+                    particleemitter.emitedParticles.push(newParticle);
+                }
+            } else {
+                particleemitter.emitedParticles.push(ParticleEmitterRunner.createParticle(particleemitter));
+            }
+            
         },
         calculateNextTick: function(particleemitter, borders){
+            this.cleanupDestroyedParticles(particleemitter);
             for (var idx = 0; idx < particleemitter.emitedParticles.length; idx++) {
                 var particle = particleemitter.emitedParticles[idx];
 
@@ -138,25 +157,21 @@ window.onload = function(){
                 color: {
                     r: particleemitter.particleColor.r, 
                     g: particleemitter.particleColor.g, 
-                    b:particleemitter.particleColor.b, 
+                    b: particleemitter.particleColor.b, 
                     a: particleemitter.particleColor.a},
-                setColor: function(r, g, b, a){
-                    this.color = {r, g, b, a};
-                },
                 getColor: function () {
-                    var alpha = (1 - ((new Date()).getTime() - this.createTime) / this.maxLifeSpan);
-                    return `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${alpha})`;
+                    this.color.a = (1 - ((new Date()).getTime() - this.createTime) / this.maxLifeSpan);
+                    return `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.color.a})`;
                 }
             };
         },
         isParticleAlive: function(particle){
-            return (new Date()).getTime() - particle.createTime <= particle.maxLifeSpan;
+            return  (new Date()).getTime() - particle.createTime <= particle.maxLifeSpan;
         },
         render: function(context, borders, particleemitter){
             this.calculateNextTick(particleemitter, borders);
             for (var idx = 0; idx < particleemitter.emitedParticles.length; idx++) {
                 var particle = particleemitter.emitedParticles[idx];
-
                 if(particleemitter.renderer){
                     particleemitter.renderer(context, particle);
                 }else{
@@ -184,16 +199,12 @@ window.onload = function(){
 
         var baseParticleEmitter1 = {
             emitedParticles:[],
-            emitPoint: {x: canvas.width / 2, y: canvas.height - 10},
-            emitVector: {x:vx, y:vy},
+            emitPoint: {x: canvas.width / 2, y: canvas.height -10},
+            emitVector: [{x:vx, y:vy}, {x:-vx, y:vy}, {x:-vx-1, y:vy}, {x:vx-1, y:vy}, {x:vx+1, y:vy}],
             emitSpeed: speed,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
             particleSize: size,
-            particleColor: {r:0, g:0, b:0, a:1},
-            renderer: function (context, particle){
-                context.fillStyle = particle.getColor();
-                context.fillRect(particle.x, particle.y, this.particleSize, this.particleSize);
-            }
+            particleColor: {r:0, g:0, b:0, a:1}
         };
 
         var baseParticleEmitter2 = {
@@ -203,11 +214,7 @@ window.onload = function(){
             emitSpeed: speed,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
             particleSize: size,
-            particleColor: {r:255, g:0, b:0, a:1},
-            renderer: function (context, particle){
-                context.fillStyle = particle.getColor();
-                context.fillRect(particle.x, particle.y, this.particleSize, this.particleSize);
-            }
+            particleColor: {r:255, g:0, b:0, a:1}
         };
 
         var baseParticleEmitter3 = {
@@ -217,11 +224,7 @@ window.onload = function(){
             emitSpeed: speed,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
             particleSize: size,
-            particleColor: {r:0, g:255, b:0, a:1},
-            renderer: function (context, particle){
-                context.fillStyle = particle.getColor();
-                context.fillRect(particle.x, particle.y, this.particleSize, this.particleSize);
-            }
+            particleColor: {r:0, g:255, b:0, a:1}
         };
 
         var baseParticleEmitter4 = {
@@ -231,11 +234,7 @@ window.onload = function(){
             emitSpeed: speed,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
             particleSize: size,
-            particleColor: {r:0, g:0, b:255, a:1},
-            renderer: function (context, particle){
-                context.fillStyle = particle.getColor();
-                context.fillRect(particle.x, particle.y, this.particleSize, this.particleSize);
-            }
+            particleColor: {r:0, g:0, b:255, a:1}
         };
 
         Engine.init({
@@ -246,8 +245,8 @@ window.onload = function(){
 
         Engine.addObjectToRender(baseParticleEmitter1);
         Engine.addObjectToRender(baseParticleEmitter2);
-        Engine.addObjectToRender(baseParticleEmitter3);
-        Engine.addObjectToRender(baseParticleEmitter4);
+       /* Engine.addObjectToRender(baseParticleEmitter3);
+        Engine.addObjectToRender(baseParticleEmitter4);*/
         Engine.startRender();
 
         var rnd = (maxNumber)=> parseInt((Math.random()*100 * maxNumber)%maxNumber);
@@ -258,16 +257,16 @@ window.onload = function(){
             emitter.emitVector.x = sign;
         };
         setInterval(()=> {
-            randomizeEmitterEmitVector(baseParticleEmitter1);
+            // randomizeEmitterEmitVector(baseParticleEmitter1);
             randomizeEmitterEmitVector(baseParticleEmitter2);
-            randomizeEmitterEmitVector(baseParticleEmitter3);
-            randomizeEmitterEmitVector(baseParticleEmitter4);
+             /*randomizeEmitterEmitVector(baseParticleEmitter3);
+            randomizeEmitterEmitVector(baseParticleEmitter4);*/
                     
             ParticleEmitterRunner.emit(baseParticleEmitter1);
             ParticleEmitterRunner.emit(baseParticleEmitter2);
-            ParticleEmitterRunner.emit(baseParticleEmitter3);
-            ParticleEmitterRunner.emit(baseParticleEmitter4);
-        }, 200);
+            /*ParticleEmitterRunner.emit(baseParticleEmitter3);
+            ParticleEmitterRunner.emit(baseParticleEmitter4);*/
+        }, 500);
     };
 
     particleEngineTest();

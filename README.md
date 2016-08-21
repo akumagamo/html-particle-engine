@@ -1,6 +1,6 @@
 # Particle Emiting Engine for Canvas
-## Versionnumber 0.2.1 (2016-08-20) Alpha
-(***Documentation last update 2016-08-20 12:21***)  
+## Versionnumber 0.2.2 (2016-08-20) Alpha
+(***Documentation last update 2016-08-20 20:57***)
 
 Particle Emiting Engine with html5 canvas  
 ![Screenshot four particle-emitters](https://raw.githubusercontent.com/akumagamo/html-particle-engine/master/readme/screenshot_01.png "Screenshot after some seconds")  
@@ -11,6 +11,7 @@ Particle Emiting Engine with html5 canvas
 * Emits particles
 * particle renderer Customizable
 * paritcle fades on lifespan ending
+* emit multiple particles at the same time
 * calculate framerate
   * toggle framerate display
 * "gravity" and "ambient Drag"
@@ -18,15 +19,17 @@ Particle Emiting Engine with html5 canvas
 
 ## WIP    
 
+
 ## Roadmap / Future Features
-* bounce of walls
+* bounce of walls (side and top)
 * emit adaptaions
-  * multiple particles at the same time from same emitter
   * emit automatic particles in specified time interval
   * emit only specified amount of particels in specified time interval 
+  * emit randomizer
+* particle render image (png)
+* particle render rotation
 
 ## Known Bugs
-
 ## Usage
      //Initialise Engine
      Engine.init({
