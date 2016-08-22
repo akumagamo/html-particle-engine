@@ -1,6 +1,6 @@
 # Particle Emiting Engine for Canvas
-## Versionnumber 0.3.2 (2016-08-20) Alpha
-(***Documentation last update 2016-08-20 20:57***)
+## Versionnumber 0.4.0 (2016-08-21) Beta
+(***Documentation last update 2016-08-21 11:45***)
 
 Particle Emiting Engine with html5 canvas  
 ![Screenshot four particle-emitters](https://raw.githubusercontent.com/akumagamo/html-particle-engine/master/readme/screenshot_01.png "Screenshot after some seconds")  
