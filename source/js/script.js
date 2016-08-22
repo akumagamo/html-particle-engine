@@ -2,13 +2,17 @@
 
 window.onload = function(){
 
-    const MAX_LIFE_SPAN = 1000;
+    const MAX_LIFE_SPAN = 3000;
     const GRAVITY = 0.1;
     const VERTICAL_DRAG = -0.75;
     const HORIZANTAL_DRAG = 0.75;
     const RENDER_FONT_COLOR = "rgba(255, 0, 0, 0.5)";
     const RADIANT = {
+        ONE: 180 / Math.PI,
         DEGREES_0: 0,
+        DEGREES_90: Math.PI / 2,
+        DEGREES_180: Math.PI,
+        DEGREES_270: Math.PI / 2 * 3,
         DEGREES_360: 2 * Math.PI,
     }
     const RENDER_TIMING = 30;
@@ -45,6 +49,26 @@ window.onload = function(){
             context.lineTo(x - halfSize, y + height);
             context.closePath();
             context.fill();
+        },
+        drawThirdOfACircle: function(context, x, y, radius, slicenumber, angleoffsetdegrees, color){
+            var angleHelper = [0, RADIANT.DEGREES_360 / 3 , RADIANT.DEGREES_360 / 3 * 2];
+            var angleHelper2 = [ RADIANT.DEGREES_360 / 3 , RADIANT.DEGREES_360 / 3 * 2, 0];
+            var angleOffset = angleoffsetdegrees * RADIANT.ONE;
+            var startAngle = angleOffset + angleHelper[slicenumber];
+            var endAngle = angleOffset + angleHelper2[slicenumber];
+
+            context.fillStyle = color;
+
+            context.beginPath();
+            context.arc(x, y, radius, startAngle, endAngle);
+            context.lineTo(x, y);
+            context.closePath();
+            context.fill();
+        },
+        constants:{
+            SLICE_ONE:0,
+            SLICE_TWO:1,
+            SLICE_THREE:2,
         }
     }
 
@@ -58,15 +82,23 @@ window.onload = function(){
            this.objectsToRender.push(objecttorender);
         },
         init: function(options){
-            if(!options || ! options.context || ! options.width || ! options.height){
+            console.info(options);
+            if( options === undefined || 
+                options.context === undefined || 
+                options.top === undefined || 
+                options.bottom === undefined ||
+                options.left === undefined ||
+                options.right === undefined){
                 throw "Missing Options Error";
             }
             this.context = options.context;
-            this.width = options.width;
-            this.height = options.height;
+            this.top = options.top;
+            this.bottom = options.bottom;
+            this.left = options.left;
+            this.right = options.right;
         },
         clearScreen: function(){
-            this.context.clearRect(0, 0, this.width, this.height);
+            this.context.clearRect(this.left, this.top, this.right, this.bottom);
         },
         startRender: function(){
             this.isRendering = true;
@@ -78,7 +110,7 @@ window.onload = function(){
         renderObjectsOnScreen: function(){
             for(var idx=0; idx<this.objectsToRender.length; idx++){
                 var objectToRender = this.objectsToRender[idx];                
-                ParticleEmitterRunner.render(this.context, {height:this.height}, objectToRender);
+                ParticleEmitterRunner.render(this.context, {top:this.top, left:this.left, bottom:this.bottom, right: this.right}, objectToRender);
             }
             this.increaseFrameRateCount();
         },
@@ -120,10 +152,11 @@ window.onload = function(){
             for (var idx = 0; idx < particleemitter.emitVectors.length; idx++) {
                 var emitVector = particleemitter.emitVectors[idx];
                 newParticle = Object.assign({}, particle);
-                
+
                 newParticle.getColor = particle.getColor;
                 newParticle.vx = emitVector.x;
                 newParticle.vy = emitVector.y;
+                newParticle.index = idx;
                 
                 if(particleemitter.shouldRandomizeEmitVector){
                     this.randomizeEmitterEmitVector(newParticle);
@@ -140,16 +173,31 @@ window.onload = function(){
                 if(ParticleEmitterRunner.isParticleAlive(particle)){
                     
                     particle.vy += GRAVITY;
+                    particle.y += particle.vy * particle.speed;
+                    particle.x += particle.vx * particle.speed;
 
-                    if(particle.y + particle.size > borders.height){
+                    if(borders.bottom!== undefined && borders.bottom < particle.y + particle.size){
                         particle.vy *= VERTICAL_DRAG;
                         particle.vx *= HORIZANTAL_DRAG;
-                        particle.y = borders.height - particle.size;
-                    }else{
-                        particle.y += particle.vy * particle.speed;
+                        particle.y = borders.bottom - particle.size;
                     }
-                    particle.x += particle.vx * particle.speed;
-                   
+
+                    if(borders.top!== undefined && borders.top > particle.y - particle.size){
+                        particle.vy *= VERTICAL_DRAG;
+                        particle.vx *= HORIZANTAL_DRAG;
+                        particle.y = borders.top + particle.size;
+                    }
+
+                    if(borders.left!== undefined && borders.left > particle.x - particle.size){
+                        particle.vx *= -HORIZANTAL_DRAG;
+                        particle.x = borders.left + particle.size;
+                    }
+
+                    if(borders.right!== undefined && borders.right < particle.x + particle.size){;
+                        particle.vx *= -HORIZANTAL_DRAG;
+                        particle.x = borders.right - particle.size;
+                    }
+
                 } else {
                     particle.isDestroyed = true;
                 }      
@@ -191,7 +239,7 @@ window.onload = function(){
                 if(particleemitter.renderer){
                     particleemitter.renderer(context, particle);
                 }else{
-                    RenderHelper.drawCircle(context, particle.x, particle.y, particle.size / 2, particle.getColor());
+                    RenderHelper.drawCircle(context, particle.x, particle.y, (particle.size / 2) * particle.color.a, particle.getColor());
                 }
             } 
         }
@@ -212,35 +260,43 @@ window.onload = function(){
 
         var baseParticleEmitter2 = {
             emitedParticles:[],
-            emitPoint: {x: canvas.width / 2, y: canvas.height -60},
-            emitVectors: [{x:vx, y:vy}, {x:1, y:1}],
-            emitSpeed: speed,
+            emitPoint: {x: canvas.width / 2, y: canvas.height / 2},
+            emitVectors: [{x:-2, y:-2}, {x:1, y:-3}, {x:2, y:-2}],
+            emitSpeed: speed * 1.5,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
-            particleSize: size,
+            particleSize: size ,
             particleColor: {r:255, g:0, b:0, a:1},
             shouldRandomizeEmitVector: true,
             renderer : (context, particle) =>{
-                context.fillStyle = particle.getColor();
-                context.fillRect(particle.x, particle.y, particle.size, particle.size);
+              RenderHelper.drawThirdOfACircle(context, 
+                    particle.x, 
+                    particle.y, 
+                    particle.size, 
+                    particle.index, 
+                    0, 
+                    particle.getColor());
             }
         };
 
         Engine.init({
             context: context,
-            width: canvas.width,
-            height:canvas.height
+            left: 0,
+            top: 0,
+            right: canvas.width,
+            bottom: canvas.height
         });
 
-        Engine.addObjectToRender(baseParticleEmitter1);
+       // Engine.addObjectToRender(baseParticleEmitter1);
         Engine.addObjectToRender(baseParticleEmitter2);
 
         Engine.startRender();
 
         setInterval(()=> {
-            ParticleEmitterRunner.emit(baseParticleEmitter1);
+           // ParticleEmitterRunner.emit(baseParticleEmitter1);
             ParticleEmitterRunner.emit(baseParticleEmitter2);
-        }, 500);
+        }, RENDER_TIMING*20);
     };
 
     particleEngineTest();
+
 }

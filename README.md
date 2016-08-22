@@ -16,12 +16,11 @@ Particle Emiting Engine with html5 canvas
 * calculate framerate
   * toggle framerate display
 * "gravity" and "ambient Drag"
-* paritcle bounce of "floor"
+* paritcle bounce of walls top, right, bottom, left
 
 ## WIP    
 
 ## Roadmap / Future Features
-* bounce of walls (side and top)
 * emit adaptaions
   * emit automatic particles in specified time interval
   * emit only specified amount of particels in specified time interval 
@@ -33,20 +32,23 @@ Particle Emiting Engine with html5 canvas
      //Initialise Engine
      Engine.init({
             context: context,
-            width: canvas.width,
-            height:canvas.height
+            left: 0,
+            top: 0,
+            right: canvas.width,
+            bottom:canvas.height
       });
 
       // Add ParticleEmiter 
       var particleEmitter = {
-            emitedParticles:[],
-            emitPoint: {x: 100, y: 100},
-            emitVector: {x:1, y:1},
+            emitedParticles: [],
+            emitPoint: {x: 50, y: 100},
+            emitVectors: [{x:1, y:1}, {x:-1, y:1}, {x:-1, y:1}],
             emitSpeed: 1,
-            particleMaxLifeSpan: 3000,
-            particleSize: 10,
-            particleColor: {r:0, g:0, b:0, a:1}
-      };
+            particleMaxLifeSpan: 1000,
+            particleSize: size,
+            particleColor: {r:0, g:0, b:0, a:1},
+            shouldRandomizeEmitVector: true
+        };
       Engine.addObjectToRender(particleEmitter);
 
       // Emit Particle
@@ -73,3 +75,21 @@ https://github.com/akumagamo/html-particle-engine.git
        | +- index.html
        +- readme.md (this document)
        +- LICENSE
+
+### Options for the Engine init
+* context:                    canvas context
+* left:                       Border left
+* top:                        Border top
+* right:                      Border right
+* bottom:                     Border bottom
+
+### Options for the ParticleEmitter
+
+* emitedParticles:            Array for storing emited particles
+* emitPoint:                  Point from where the particles will be emitted
+* emitVectors:                Array with the Vectors for emiting, will be ignored if **shouldRandomizeEmitVector** is set to **true**
+* emitSpeed:                  Speed of emitted particle
+* particleMaxLifeSpan:        Lifespan of created particles in **ms**
+* particleSize:               Particle Size
+* particleColor:              RGBA color Object
+* shouldRandomizeEmitVector:  property if the EmitVector should be randomizied at every emit
