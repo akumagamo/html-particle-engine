@@ -1,10 +1,9 @@
 # Particle Emiting Engine for Canvas
-## Versionnumber 0.4.0 (2016-08-21) Beta
-(***Documentation last update 2016-08-21 11:45***)
+## Versionnumber 0.4.1 (2016-08-21) Beta
+(***Documentation last update 2016-08-21 21:30***)
 
 Particle Emiting Engine with html5 canvas  
 ![Screenshot four particle-emitters](https://raw.githubusercontent.com/akumagamo/html-particle-engine/master/readme/screenshot_01.png "Screenshot after some seconds")  
-  
 [Small demo](https://rawgit.com/akumagamo/html-particle-engine/master/source/index.html)
 
 ## Features
@@ -17,6 +16,7 @@ Particle Emiting Engine with html5 canvas
   * toggle framerate display
 * "gravity" and "ambient Drag"
 * paritcle bounce of walls top, right, bottom, left
+* onBorderCollision Event
 
 ## WIP    
 
@@ -24,7 +24,6 @@ Particle Emiting Engine with html5 canvas
 * emit adaptaions
   * emit automatic particles in specified time interval
   * emit only specified amount of particels in specified time interval 
-* particle render image (png)
 * particle render rotation
 
 ## Known Bugs
@@ -35,18 +34,18 @@ Particle Emiting Engine with html5 canvas
             left: 0,
             top: 0,
             right: canvas.width,
-            bottom:canvas.height
+            bottom: canvas.height
       });
 
       // Add ParticleEmiter 
       var particleEmitter = {
             emitedParticles: [],
             emitPoint: {x: 50, y: 100},
-            emitVectors: [{x:1, y:1}, {x:-1, y:1}, {x:-1, y:1}],
+            emitVectors: [{x: 1, y: 1}, {x: -1, y: 1}, {x: -1, y: 1}],
             emitSpeed: 1,
             particleMaxLifeSpan: 1000,
             particleSize: size,
-            particleColor: {r:0, g:0, b:0, a:1},
+            particleColor: {r: 0, g: 0, b: 0, a: 1},
             shouldRandomizeEmitVector: true
         };
       Engine.addObjectToRender(particleEmitter);
@@ -77,19 +76,21 @@ https://github.com/akumagamo/html-particle-engine.git
        +- LICENSE
 
 ### Options for the Engine init
-* context:                    canvas context
-* left:                       Border left
-* top:                        Border top
-* right:                      Border right
-* bottom:                     Border bottom
+* **context:**                    canvas context
+* **left:**                       Draw left limit
+* **top:**                        Draw top limit
+* **right:**                      Draw right limit
+* **bottom:**                     Draw bottom limit
 
 ### Options for the ParticleEmitter
-
-* emitedParticles:            Array for storing emited particles
-* emitPoint:                  Point from where the particles will be emitted
-* emitVectors:                Array with the Vectors for emiting, will be ignored if **shouldRandomizeEmitVector** is set to **true**
-* emitSpeed:                  Speed of emitted particle
-* particleMaxLifeSpan:        Lifespan of created particles in **ms**
-* particleSize:               Particle Size
-* particleColor:              RGBA color Object
-* shouldRandomizeEmitVector:  property if the EmitVector should be randomizied at every emit
+* **borders:**                    Border where the particles collided 
+* **emitedParticles:**            Array for storing emited particles
+* **emitPoint:**                  Point from where the particles will be emitted
+* **emitVectors:**                Array with the Vectors for emiting, will be ignored if **shouldRandomizeEmitVector** is set to **true**
+* **emitSpeed:**                  Speed of emitted particle
+* **particleMaxLifeSpan:**        Lifespan of created particles in **ms**
+* **particleSize:**               Particle Size
+* **particleColor:**              RGBA color Object
+* **renderer:**                   Custom Render function for particles
+* **onBorderCollision:**          Event Listener function, called on collision
+* **shouldRandomizeEmitVector:**  property if the EmitVector should be randomizied at every emit

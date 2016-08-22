@@ -110,7 +110,7 @@ window.onload = function(){
         renderObjectsOnScreen: function(){
             for(var idx=0; idx<this.objectsToRender.length; idx++){
                 var objectToRender = this.objectsToRender[idx];                
-                ParticleEmitterRunner.render(this.context, {top:this.top, left:this.left, bottom:this.bottom, right: this.right}, objectToRender);
+                ParticleEmitterRunner.render(this.context, objectToRender);
             }
             this.increaseFrameRateCount();
         },
@@ -152,7 +152,6 @@ window.onload = function(){
             for (var idx = 0; idx < particleemitter.emitVectors.length; idx++) {
                 var emitVector = particleemitter.emitVectors[idx];
                 newParticle = Object.assign({}, particle);
-
                 newParticle.getColor = particle.getColor;
                 newParticle.vx = emitVector.x;
                 newParticle.vy = emitVector.y;
@@ -163,7 +162,11 @@ window.onload = function(){
                 }
                 particleemitter.emitedParticles.push(newParticle);
             }
-            
+        },
+        emitBorderCollision: function(particleemitter, particle){
+            if(particleemitter.onBorderCollision !== undefined){
+                particleemitter.onBorderCollision(particle);
+            }
         },
         calculateNextTick: function(particleemitter, borders){
             this.cleanupDestroyedParticles(particleemitter);
@@ -176,26 +179,33 @@ window.onload = function(){
                     particle.y += particle.vy * particle.speed;
                     particle.x += particle.vx * particle.speed;
 
-                    if(borders.bottom!== undefined && borders.bottom < particle.y + particle.size){
-                        particle.vy *= VERTICAL_DRAG;
-                        particle.vx *= HORIZANTAL_DRAG;
-                        particle.y = borders.bottom - particle.size;
-                    }
-
-                    if(borders.top!== undefined && borders.top > particle.y - particle.size){
-                        particle.vy *= VERTICAL_DRAG;
-                        particle.vx *= HORIZANTAL_DRAG;
-                        particle.y = borders.top + particle.size;
-                    }
-
-                    if(borders.left!== undefined && borders.left > particle.x - particle.size){
-                        particle.vx *= -HORIZANTAL_DRAG;
-                        particle.x = borders.left + particle.size;
-                    }
-
-                    if(borders.right!== undefined && borders.right < particle.x + particle.size){;
-                        particle.vx *= -HORIZANTAL_DRAG;
-                        particle.x = borders.right - particle.size;
+                    if(borders!==undefined){
+                        var hasCollided = false;
+                        if(borders.bottom!== undefined && borders.bottom < particle.y + particle.size){
+                            particle.vy *= VERTICAL_DRAG;
+                            particle.vx *= HORIZANTAL_DRAG;
+                            particle.y = borders.bottom - particle.size;
+                            hasCollided = true; 
+                        }
+                        if(borders.top!== undefined && borders.top > particle.y - particle.size){
+                            particle.vy *= VERTICAL_DRAG;
+                            particle.vx *= HORIZANTAL_DRAG;
+                            particle.y = borders.top + particle.size;
+                            hasCollided = true;
+                        }
+                        if(borders.left!== undefined && borders.left > particle.x - particle.size){
+                            particle.vx *= -HORIZANTAL_DRAG;
+                            particle.x = borders.left + particle.size;
+                            hasCollided = true;
+                        }
+                        if(borders.right!== undefined && borders.right < particle.x + particle.size){;
+                            particle.vx *= -HORIZANTAL_DRAG;
+                            particle.x = borders.right - particle.size;
+                            hasCollided = true;
+                        }
+                        if(hasCollided){
+                            this.emitBorderCollision(particleemitter, particle);
+                        }
                     }
 
                 } else {
@@ -224,7 +234,7 @@ window.onload = function(){
                     b: particleemitter.particleColor.b, 
                     a: particleemitter.particleColor.a},
                 getColor: function () {
-                    this.color.a = (1 - ((new Date()).getTime() - this.createTime) / this.maxLifeSpan);
+                    this.color.a = Math.max((1 - ((new Date()).getTime() - this.createTime) / this.maxLifeSpan), 0);
                     return `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${this.color.a})`;
                 }
             };
@@ -232,14 +242,14 @@ window.onload = function(){
         isParticleAlive: function(particle){
             return  (new Date()).getTime() - particle.createTime <= particle.maxLifeSpan;
         },
-        render: function(context, borders, particleemitter){
-            this.calculateNextTick(particleemitter, borders);
+        render: function(context, particleemitter){
+            this.calculateNextTick(particleemitter, particleemitter.borders);
             for (var idx = 0; idx < particleemitter.emitedParticles.length; idx++) {
                 var particle = particleemitter.emitedParticles[idx];
                 if(particleemitter.renderer){
                     particleemitter.renderer(context, particle);
                 }else{
-                    RenderHelper.drawCircle(context, particle.x, particle.y, (particle.size / 2) * particle.color.a, particle.getColor());
+                    RenderHelper.drawCircle(context, particle.x, particle.y, (particle.size / 2) , particle.getColor());
                 }
             } 
         }
@@ -247,34 +257,53 @@ window.onload = function(){
 
     var particleEngineTest = () =>{
 
-        var baseParticleEmitter1 = {
+        var sprite  = new Image(10, 10);
+        sprite.src = 'img/sprite.png';
+
+        var explosionParticleEmitter = {
+            emitedParticles:[],
+            emitPoint: {x: canvas.width / 2, y: canvas.height / 2},
+            emitVectors: [
+                {x: -1, y: 0}, 
+                {x: -0.7, y: -0.7}, 
+                {x: 0, y: -1}, 
+                {x: 0.7, y: -0.7}, 
+                {x: 1, y: 0}, 
+                {x: 0.7, y: 0.7}, 
+                {x: 0, y: 1},
+                {x: -0.7, y: 0.7}
+            ],
+            emitSpeed: speed * 1.5,
+            particleMaxLifeSpan: 500,
+            particleSize: 5,
+            particleColor: {r:255, g:0, b:0, a:1},
+            shouldRandomizeEmitVector: true
+        };
+
+        var baseParticleEmitter = {
+           borders: {
+                    left: 30,
+                    top: 30,
+                    right: canvas.width - 30,
+                    bottom: canvas.height - 30
+            },
             emitedParticles:[],
             emitPoint: {x: canvas.width / 2, y: canvas.height -60},
             emitVectors: [{x:vx, y:vy}, {x:-vx, y:vy}, {x:-vx-1, y:vy}],
             emitSpeed: speed,
             particleMaxLifeSpan: MAX_LIFE_SPAN,
-            particleSize: size,
+            particleSize: size * 3,
             particleColor: {r:0, g:0, b:0, a:1},
-            shouldRandomizeEmitVector: true
-        };
-
-        var baseParticleEmitter2 = {
-            emitedParticles:[],
-            emitPoint: {x: canvas.width / 2, y: canvas.height / 2},
-            emitVectors: [{x:-2, y:-2}, {x:1, y:-3}, {x:2, y:-2}],
-            emitSpeed: speed * 1.5,
-            particleMaxLifeSpan: MAX_LIFE_SPAN,
-            particleSize: size ,
-            particleColor: {r:255, g:0, b:0, a:1},
             shouldRandomizeEmitVector: true,
-            renderer : (context, particle) =>{
-              RenderHelper.drawThirdOfACircle(context, 
-                    particle.x, 
-                    particle.y, 
-                    particle.size, 
-                    particle.index, 
-                    0, 
-                    particle.getColor());
+            onBorderCollision: (particle) => {
+                particle.isDestroyed = true;
+                explosionParticleEmitter.emitPoint.x = particle.x;
+                explosionParticleEmitter.emitPoint.y = particle.y;
+                ParticleEmitterRunner.emit(explosionParticleEmitter)
+            },
+            renderer: function(context, particle){
+                context.drawImage(sprite, particle.x, particle.y, particle.size, particle.size);
+
             }
         };
 
@@ -286,17 +315,15 @@ window.onload = function(){
             bottom: canvas.height
         });
 
-       // Engine.addObjectToRender(baseParticleEmitter1);
-        Engine.addObjectToRender(baseParticleEmitter2);
+        Engine.addObjectToRender(baseParticleEmitter);
+        Engine.addObjectToRender(explosionParticleEmitter);
 
         Engine.startRender();
 
         setInterval(()=> {
-           // ParticleEmitterRunner.emit(baseParticleEmitter1);
-            ParticleEmitterRunner.emit(baseParticleEmitter2);
+            ParticleEmitterRunner.emit(baseParticleEmitter);
         }, RENDER_TIMING*20);
     };
 
     particleEngineTest();
-
 }
